@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ Fraud Detection Quiz - FIXED</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh; 
+            background: linear-gradient(-45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            color: #333;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .particles {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1;
+        }
+        .particle {
+            position: absolute; width: 4px; height: 4px;
+            background: rgba(255,255,255,0.6); border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+        @keyframes float {
+            0% { transform: translateY(100vh); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+        .container { max-width: 700px; margin: 0 auto; }
+        .header { 
+            text-align: center; color: white; margin-bottom: 40px; 
+            animation: fadeIn 1s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        .header h1 { font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); margin-bottom: 10px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        .progress { text-align: center; color: white; font-size: 1.1em; margin-bottom: 20px; }
+        .question-container { 
+            background: rgba(255,255,255,0.95); 
+            border-radius: 25px; 
+            padding: 40px 30px; 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25); 
+            animation: slideInUp 0.8s ease-out;
+            position: relative;
+        }
+        @keyframes slideInUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .question-number { 
+            position: absolute; top: 20px; right: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4); color: white;
+            padding: 10px 20px; border-radius: 25px; font-weight: bold; font-size: 1em;
+        }
+        .question-text { 
+            font-size: 1.5em; font-weight: 600; margin-bottom: 30px; 
+            line-height: 1.4; color: #333;
+        }
+        .options { display: flex; flex-direction: column; gap: 18px; margin-bottom: 30px; }
+        .option { 
+            padding: 22px 25px; border: 3px solid transparent; border-radius: 18px;
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef); cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size: 1.1em; font-weight: 500;
+            position: relative; overflow: hidden;
+        }
+        .option:hover:not(.selected):not(.answered) { 
+            transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            border-color: #4ecdc4;
+        }
+        .option.selected { 
+            background: linear-gradient(135deg, #4ecdc4, #45b7d1) !important; 
+            color: white; border-color: #4ecdc4; transform: scale(1.02);
+        }
+        .option.correct-answer { 
+            background: linear-gradient(135deg, #28a745, #20c997) !important; 
+            color: white; border-color: #28a745;
+        }
+        .feedback { 
+            margin-top: 25px; padding: 25px; border-radius: 18px; font-size: 1.1em;
+            line-height: 1.6; animation: feedbackSlide 0.6s ease-out; min-height: 140px;
+        }
+        @keyframes feedbackSlide { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .feedback.correct { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+        .feedback.incorrect { background: linear-gradient(135deg, #dc3545, #fd7e14); color: white; }
+        .btn { 
+            background: linear-gradient(135deg, #4ecdc4, #45b7d1); color: white; border: none;
+            padding: 20px 50px; font-size: 1.2em; font-weight: 600; border-radius: 50px;
+            cursor: pointer; transition: all 0.3s ease; width: 100%; max-width: 350px;
+            box-shadow: 0 12px 30px rgba(78,205,196,0.4); margin: 20px auto; display: block;
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(78,205,196,0.5); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .result-container { text-align: center; animation: fadeIn 1s ease-out; }
+        .score { font-size: 3.5em; font-weight: bold; margin: 30px 0; 
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        @media (max-width: 768px) { 
+            .header h1 { font-size: 2em; } 
+            .question-container { padding: 30px 20px; margin: 10px; }
+            .question-text { font-size: 1.3em; }
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    <div class="container">
+        <div class="header" id="header">
+            <h1>🛡️ Fraud Detection Quiz</h1>
+            <p>Test your knowledge of recent online scams in India</p>
+        </div>
+        
+        <div id="quizArea" class="question-container">
+            <!-- Questions load here -->
+        </div>
+        
+        <div id="resultArea" class="result-container hidden">
+            <!-- Results load here -->
+        </div>
+    </div>
+
+    <script>
+        // 3 COMPLETE SETS OF 10 QUESTIONS EACH
+        const quizSets = {
+            set1: [
+                {q: "WhatsApp from 'ICICI Bank': account suspended, click to verify. Action?", o:["Click link","Call number","Never click","Share OTP"], c:2, e:"Banks NEVER send clickable links via WhatsApp. Verify via official app/website."},
+                {q: "'Digital arrest' - you're under investigation. Pay to avoid jail?", o:["Pay immediately","Visit police station","Share details","Click link"], c:1, e:"No agency arrests via phone. Real police visit in person. ₹1200cr lost 2025."},
+                {q: "SMS: 'UPI failed. Reply YES for refund.' Legit?", o:["Reply YES","Check UPI app","Share PIN","Call number"], c:1, e:"UPI services never ask to reply YES. Check official app directly."},
+                {q: "App promises 5% daily returns (₹10K→₹50K in 10 days). Real?", o:["Great deal","Ponzi scam","Invest small","Ask friends"], c:1, e:"No legit investment guarantees daily returns. SEBI warns against such apps."},
+                {q: "'Cousin' AI voice call - needs ₹25K abroad urgently. Do?", o:["Send money","Verify via known contact","Share OTP","Call police"], c:1, e:"AI voice cloning up 500% in 2025. Always verify via alternate contact."},
+                {q: "Amazon delivery asks for correct OTP. Response?", o:["Share OTP","Check Amazon app","OTP for delivery","Ignore"], c:1, e:"Delivery NEVER needs OTP. Amazon policy: OTP for account verification only."},
+                {q: "Telegram IPL match fixing ₹500/month. Join?", o:["Good deal","Report channel","Try 1 month","Legal"], c:1, e:"No match fixing predictable. IPL scams caused ₹700cr losses 2025."},
+                {q: "IRCTC: 'PNR cancelled. Click to rebook.' Peak season?", o:["Click link","Check IRCTC site","Share PNR","Call helpline"], c:1, e:"IRCTC never sends clickable links. Always check official website."},
+                {q: "Actress Instagram: ₹1L for 5-min video. Legit?", o:["Celebrity income","Deepfake scam","Try small video","Real"], c:1, e:"Celebrities don't DM money offers. ₹1200cr lost to fake celeb scams."},
+                {q: "Aadhaar deadline SMS with RBI logo. Comply?", o:["Govt mandate","UIDAI never SMS","Link via bank","Ignore"], c:3, e:"Govt never demands Aadhaar via SMS. Use verified bank channels only."}
+            ],
+            set2: [
+                {q: "PhonePe: 'Account compromised. Click to secure.' Real?", o:["Click link","Check PhonePe app","Reply OTP","Call care"], c:1, e:"Payment apps never send clickable security links. Check app notifications."},
+                {q: "WhatsApp business suspended. Submit via link?", o:["Submit details","Check help center","Share info","Contact support"], c:1, e:"WhatsApp never asks verification via messages. Check official help center."},
+                {q: "Crypto bot: 20% monthly guaranteed returns?", o:["Crypto risky","No guarantees","Min amount","RBI approved"], c:1, e:"RBI warns against crypto Ponzi. ₹3500cr lost to fake platforms 2025."},
+                {q: "PF matured ₹5L. Link bank via website?", o:["Claim now","Check EPFO portal","PF auto-matures","Call EPFO"], c:1, e:"EPFO never sends maturity links. Check epfindia.gov.in directly."},
+                {q: "Swiggy accident: ₹2K insurance via UPI?", o:["Send now","Verify Swiggy app","Check social","Never individuals"], c:1, e:"Delivery companies handle insurance internally. Swiggy warned of impersonation."},
+                {q: "Google Pay ₹999 KYC reward via SMS?", o:["Claim reward","Check GPay app","KYC via SMS","Rewards SMS"], c:1, e:"GPay promotions in-app only. Google blocked 1.2cr fraud numbers."},
+                {q: "Matrimonial ₹999 lifetime premium?", o:["Lifetime deal","Check reviews","Matrimonial safe","Pay upfront"], c:1, e:"Matrimonial scams collect fees then vanish profiles. Check reviews first."},
+                {q: "Electricity waiver: ₹500 processing for ₹5K waiver?", o:["Govt subsidy","Never pay to claim","Check board","Legitimate"], c:1, e:"Govt schemes never require processing fees. Maharashtra lost ₹150cr."},
+                {q: "LinkedIn ₹15L job via referral link?", o:["Dream job","Verify company","Click referral","Processing fee"], c:1, e:"Legit recruiters use company email. 60k fake jobs monthly reported."},
+                {q: "JioFiber ₹99 installation via call?", o:["Great deal","Check MyJio","Jio calls offers","Too cheap"], c:1, e:"Jio offers in MyJio app only. Never via unsolicited calls."}
+            ],
+            set3: [
+                {q: "IT refund ₹45K. Update KYC via link?", o:["Claim refund","Check incometax.gov.in","IT sends links","Call helpline"], c:1, e:"IT refunds auto-credit. ITD arrested 2500+ fake refund scammers 2025."},
+                {q: "Zomato Gold free via WhatsApp link?", o:["Free membership","Check Zomato app","WhatsApp legit","Phishing"], c:1, e:"Zomato promotions in-app only. Food delivery scams up 450% in festivals."},
+                {q: "RTO smart card license ₹299 mandatory?", o:["Govt digitalization","Check parivahan.gov.in","RTO charges extra","Mandatory"], c:1, e:"Smart cards free with DL. Transport warned about fake rackets collecting ₹75cr."},
+                {q: "Railway TC fine waiver ₹200 processing?", o:["Pay processing","Check IRCTC","Railways waive","Legal"], c:1, e:"Railways issue fines at stations only. RPF arrested 400+ fake TC gangs."},
+                {q: "Ayushman card activation ₹99 hospital tie-up?", o:["Healthcare benefit","PMJAY free","Check pmjay.gov.in","Pay agents"], c:1, e:"Ayushman cards free at empanelled hospitals. Targets rural areas."},
+                {q: "Freelancer.com $5K project needs ₹25K deposit?", o:["Intl client","Never pay deposits","Check reviews","Platforms safe"], c:1, e:"Legit platforms never ask security deposits. Upwork/Fiverr warned users."},
+                {q: "Bajaj loan ₹2L approved via WhatsApp e-sign?", o:["Loan approved","Check portal","NBFC WhatsApp","Visit branch"], c:1, e:"NBFCs use official portals only. RBI mandates secure documentation."},
+                {q: "PM Kisan 15th installment ₹2K link account?", o:["Claim installment","Check pmkisan.gov.in","Kisan sends links","Already receiving"], c:1, e:"PM Kisan auto-credits registered accounts. Farmers lost ₹400cr to fakes."},
+                {q: "Ola driver rating dropped. ₹999 training?", o:["Improve ratings","Ratings auto-calculate","Check app","Legitimate"], c:1, e:"Ratings calculated automatically. Ola blocked 60k fake training centers."},
+                {q: "Voter ID smart card ₹150 mandatory?", o:["Govt mandate","Existing valid","Check nvsp.in","Pay services"], c:1, e:"Existing voter IDs valid lifelong. ECI warned about fake smart card rackets."}
+            ]
+        };
+
+        let currentSet = Math.floor(Math.random() * 3) + 1;
+        let currentQuestion = 0;
+        let score = 0;
+        let answered = false;
+        let quizActive = true;
+        const sets = {1: quizSets.set1, 2: quizSets.set2, 3: quizSets.set3};
+
+        // Create particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for(let i = 0; i < 60; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // Load question
+        function loadQuestion() {
+            const questions = sets[currentSet];
+            if(currentQuestion >= 10) return showResults();
+            
+            const q = questions[currentQuestion];
+            const quizArea = document.getElementById('quizArea');
+            
+            quizArea.innerHTML = `
+                <div class="question-number">Set ${currentSet} | Q${currentQuestion + 1}/10</div>
+                <div class="question-text">${q.q}</div>
+                <div class="options" id="options"></div>
+                <div id="feedback" class="feedback hidden"></div>
+                <button class="btn" id="nextBtn" disabled>Next Question →</button>
+            `;
+            
+            const optionsContainer = document.getElementById('options');
+            q.o.forEach((option, index) => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'option';
+                optionEl.textContent = option;
+                optionEl.onclick = () => selectAnswer(index, q.c, q.e);
+                optionsContainer.appendChild(optionEl);
+            });
+            
+            answered = false;
+        }
+
+        // Handle answer selection
+        function selectAnswer(selected, correct, explanation) {
+            if(answered || !quizActive) return;
+            answered = true;
+            
+            const options = document.querySelectorAll('.option');
+            options.forEach((opt, i) => {
+                opt.classList.add('answered');
+                opt.style.pointerEvents = 'none';
+                if(i === selected) opt.classList.add('selected');
+                if(i === correct) opt.classList.add('correct-answer');
+            });
+            
+            const feedback = document.getElementById('feedback');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            if(selected === correct) {
+                score++;
+                feedback.innerHTML = `<strong>🎉 Congratulations! Correct!</strong><br><br>${explanation}`;
+                feedback.className = 'feedback correct';
+            } else {
+                feedback.innerHTML = `<strong>❌ Incorrect!</strong><br><br>${explanation}<br><br><strong>Be careful next time whenever you see such messages!</strong>`;
+                feedback.className = 'feedback incorrect';
+            }
+            
+            feedback.classList.remove('hidden');
+            nextBtn.disabled = false;
+            nextBtn.onclick = nextQuestion;
+        }
+
+        // Next question
+        function nextQuestion() {
+            currentQuestion++;
+            loadQuestion();
+        }
+
+        // Show results
+        function showResults() {
+            quizActive = false;
+            const percentage = Math.round((score / 10) * 100);
+            document.getElementById('quizArea').classList.add('hidden');
+            document.getElementById('resultArea').classList.remove('hidden');
+            document.getElementById('header').innerHTML = `
+                <h1>✅ Quiz Completed!</h1>
+                <p>Set ${currentSet} Finished - ${score}/10 (${percentage}%)</p>
+            `;
+            document.getElementById('resultArea').innerHTML = `
+                <div class="score">${score}/10</div>
+                <p style="font-size: 1.3em; color: #333; margin: 30px 0; line-height: 1.6;">
+                    Congratulations! You have successfully completed the fraud detection test.<br>
+                    <strong>Remember: If something feels urgent or too good to be true, it's usually a SCAM!</strong>
+                </p>
+                <button class="btn" onclick="restartQuiz()">🌀 Take Another Test (Set ${currentSet % 3 + 1})</button>
+                <p style="margin-top: 25px; font-size: 0.9em; opacity: 0.8; color: #666;">
+                    Completed: ${new Date().toLocaleString()}
+                </p>
+            `;
+        }
+
+        // Restart quiz
+        function restartQuiz() {
+            currentSet = currentSet % 3 + 1;
+            currentQuestion = 0;
+            score = 0;
+            answered = false;
+            quizActive = true;
+            document.getElementById('resultArea').classList.add('hidden');
+            document.getElementById('quizArea').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        // Initialize
+        createParticles();
+        loadQuestion();
+    </script>
+</body>
+</html>
+
